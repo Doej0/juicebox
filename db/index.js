@@ -194,7 +194,9 @@ async function getPostsByUser(userId) {
       WHERE "authorId"=${userId};
     `);
 
-    const post = await Promise.all(postIds.map((post) => getPostById(post.id)));
+    const posts = await Promise.all(
+      postIds.map((post) => getPostById(post.id))
+    );
 
     return posts;
   } catch (error) {
@@ -220,9 +222,17 @@ async function createTags(tagList) {
       `INSERT INTO tags(name)
        VALUES (${insertValues})
        ON CONFLICT (name) DO NOTHING;
+      `,
+      tagList
+    );
+
+    const { rows } = await client.query(
+      `
        SELECT * FROM tags
        WHERE name
-       IN (${selectValues});`
+       IN (${selectValues});
+       `,
+      tagList
     );
     return rows;
   } catch (error) {

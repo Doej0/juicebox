@@ -63,8 +63,9 @@ async function createTables() {
         name VARCHAR(255) UNIQUE NOT NULL
       );
       CREATE TABLE post_tags(
-        "postId" INTEGER REFERENCES posts(id) UNIQUE,
-        "tagId" INTEGER REFERENCES tags(id) UNIQUE 
+        "postId" INTEGER REFERENCES posts(id),
+        "tagId" INTEGER REFERENCES tags(id), 
+        UNIQUE("postId","tagId")
       );
     `);
 
@@ -110,6 +111,7 @@ async function createInitialPosts() {
     const [albert, sandra, glamgal] = await getAllUsers();
 
     console.log("Starting to create posts...");
+
     await createPost({
       authorId: albert.id,
       title: "First Post",
