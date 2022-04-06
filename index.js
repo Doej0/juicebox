@@ -2,10 +2,13 @@ const PORT = 3000;
 const express = require("express");
 const server = express();
 const morgan = require("morgan");
+const bodyParser = require("body-parser");
 
 require("dotenv").config();
 
 server.use(morgan("dev"));
+
+server.use(bodyParser.json());
 
 server.use(express.json());
 
