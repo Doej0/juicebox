@@ -19,6 +19,14 @@ server.listen(PORT, () => {
   console.log("The server is up on port", PORT);
 });
 
+server.get("/background/:color", (req, res, next) => {
+  res.send(`
+    <body style="background: ${req.params.color};">
+      <h1>Hello World</h1>
+    </body>
+  `);
+});
+
 //Tells the server to always call this function
 server.use((req, res, next) => {
   console.log("<____Body Logger START____>");
