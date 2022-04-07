@@ -20,6 +20,7 @@ tagsRouter.get("/:tagName/posts", async (req, res, next) => {
   try {
     // use our method to get posts by tag name from the db
     const allPosts = await getPostsByTagName(tagName);
+
     const posts = allPosts.filter((post) => {
       if (post.active) {
         return true;
