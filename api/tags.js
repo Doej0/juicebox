@@ -22,16 +22,9 @@ tagsRouter.get("/:tagName/posts", async (req, res, next) => {
     const allPosts = await getPostsByTagName(tagName);
 
     const posts = allPosts.filter((post) => {
-      if (post.active) {
-        return true;
-      }
-
-      if (req.user && req.user.id === post.author.id) {
-        return true;
-      }
-
-      return false;
+      return post.active || (req.user && req.user.id === post.author.id);
     });
+
     // send out an object to the client { posts: // the posts }
     res.send({ posts });
     // forward the name and message to the error handler
