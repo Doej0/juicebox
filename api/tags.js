@@ -22,7 +22,10 @@ tagsRouter.get("/:tagName/posts", async (req, res, next) => {
     const allPosts = await getPostsByTagName(tagName);
 
     const posts = allPosts.filter((post) => {
-      return post.active || (req.user && req.user.id === post.author.id);
+      return (
+        post.active ||
+        (req.user && req.user.id && post.author.active === post.author.id)
+      );
     });
 
     // send out an object to the client { posts: // the posts }

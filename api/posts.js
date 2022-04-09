@@ -1,7 +1,7 @@
 const express = require("express");
 const postsRouter = express.Router();
 const { getAllPosts, createPost, updatePost, getPostById } = require("../db");
-const { requireUser } = require("./utils");
+const { requireUser, requireActiveUser } = require("./utils");
 
 postsRouter.use((req, res, next) => {
   console.log("A request is being made to /posts");
@@ -9,37 +9,42 @@ postsRouter.use((req, res, next) => {
   next();
 });
 
-postsRouter.post("/", requireUser, async (req, res, next) => {
-  const { title, content, tags = "" } = req.body;
-  const tagArr = tags.trim().split(/\s+/);
-  const postData = {};
-  // only send the tags if there are some to send
-  if (tagArr.length) {
-    postData.tags = tagArr;
-  }
-
-  try {
-    // add authorId, title, content to postData object
-    postData.authorId = req.user.id;
-    postData.title = title;
-    postData.content = content;
-    // const post = await createPost(postData);
-    const post = await createPost(postData);
-    // this will create the post and the tags for us
-    // if the post comes back, res.send({ post });
-    if (post) {
-      res.send(post);
-    } else {
-      next({
-        name: "PostCreationError",
-        message: "Tere was an error creating your post. Please try again.",
-      });
+postsRouter.post(
+  "/",
+  requireUser,
+  requireActiveUser,
+  async (req, res, next) => {
+    const { title, content, tags = "" } = req.body;
+    const tagArr = tags.trim().split(/\s+/);
+    const postData = {};
+    // only send the tags if there are some to send
+    if (tagArr.length) {
+      postData.tags = tagArr;
     }
-    // otherwise, next an appropriate error object
-  } catch ({ name, message }) {
-    next({ name, message });
+
+    try {
+      // add authorId, title, content to postData object
+      postData.authorId = req.user.id;
+      postData.title = title;
+      postData.content = content;
+      // const post = await createPost(postData);
+      const post = await createPost(postData);
+      // this will create the post and the tags for us
+      // if the post comes back, res.send({ post });
+      if (post) {
+        res.send(post);
+      } else {
+        next({
+          name: "PostCreationError",
+          message: "There was an error creating your post. Please try again.",
+        });
+      }
+      // otherwise, next an appropriate error object
+    } catch ({ name, message }) {
+      next({ name, message });
+    }
   }
-});
+);
 
 postsRouter.get("/", async (req, res) => {
   const posts = await getAllPosts();
@@ -82,39 +87,47 @@ postsRouter.patch("/:postId", requireUser, async (req, res, next) => {
   }
 });
 
-postsRouter.delete("/:postId", requireUser, async (req, res, next) => {
-  try {
-    const post = await getPostById(req.params.postId);
+postsRouter.delete(
+  "/:postId",
+  requireUser,
+  requireActiveUser,
+  async (req, res, next) => {
+    try {
+      const post = await getPostById(req.params.postId);
 
-    if (post && post.author.id === req.user.id) {
-      const updatedPost = await updatePost(post.id, { active: false });
+      if (post && post.author.id === req.user.id) {
+        const updatedPost = await updatePost(post.id, { active: false });
 
-      res.send({ post: updatedPost });
-    } else {
-      // if there was a post, throw UnauthorizedUserError, otherwise throw PostNotFoundError
-      next(
-        post
-          ? {
-              name: "UnauthorizedUserError",
-              message: "You cannot delete a post which is not yours",
-            }
-          : {
-              name: "PostNotFoundError",
-              message: "That post does not exist",
-            }
-      );
+        res.send({ post: updatedPost });
+      } else {
+        // if there was a post, throw UnauthorizedUserError, otherwise throw PostNotFoundError
+        next(
+          post
+            ? {
+                name: "UnauthorizedUserError",
+                message: "You cannot delete a post which is not yours",
+              }
+            : {
+                name: "PostNotFoundError",
+                message: "That post does not exist",
+              }
+        );
+      }
+    } catch ({ name, message }) {
+      next({ name, message });
     }
-  } catch ({ name, message }) {
-    next({ name, message });
   }
-});
+);
 
 postsRouter.get("/", async (req, res, next) => {
   try {
     const allPosts = await getAllPosts();
 
     const posts = allPosts.filter((post) => {
-      return post.active || (req.user && post.author.id === req.user.id);
+      return (
+        post.active ||
+        (req.user && post.author.id && post.author.active === req.user.id)
+      );
     });
 
     res.send({
